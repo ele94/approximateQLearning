@@ -15,6 +15,8 @@ from keras.optimizers import SGD
 from skimage.transform import resize
 import tensorflow as tf
 
+from datetime import datetime
+
 PACMAN_ACTIONS = ['North', 'South', 'East', 'West', 'Stop']
 
 
@@ -59,8 +61,10 @@ class PacmanDQNAgent(ReinforcementAgent):
         self.alpha_decay = 0.01
         self.frame_width = 85
         self.frame_height = 85
+        self.pop_memory = 0
+        self.pop_memory_max = 100
 
-        self.memory = deque(maxlen=20000)
+        self.memory = deque(maxlen=5000)
         self.model = self._build_model()
 
 
@@ -105,6 +109,7 @@ class PacmanDQNAgent(ReinforcementAgent):
     #             best_action = action
     #     return best_action
 
+
     def getAction(self, state):
         """
           Compute the action to take in the current state.  With
@@ -141,10 +146,27 @@ class PacmanDQNAgent(ReinforcementAgent):
             #state_matrix = np.reshape(state_matrix, (1, self.frame_width, self.frame_height))
 
             act_values = self.model.predict(self.image)
-            action = PACMAN_ACTIONS[(np.argmax(act_values[0]))] # returns action
 
-            if action not in legalActions:
-                action = 'Stop'
+            for value in act_values[0]:
+                action = PACMAN_ACTIONS[(np.argmax(act_values[0]))]
+                if action not in legalActions:
+                    act_values[0][np.argmax(act_values[0])] = -10000
+                else:
+                    break
+
+            # action = PACMAN_ACTIONS[(np.argmax(act_values[0]))] # returns action
+            # print 'chosen action: ', action
+            #
+            # if action not in legalActions:
+            #     print 'action was not legal'
+            #
+            #     for value in act_values:
+            #         act_values[0, np.argmax(act_values[0])] = -1000
+            #         action = PACMAN_ACTIONS[(np.argmax(act_values[0]))]
+            #         if action in legalActions:
+            #             break
+            #     print 'chose action: ', action
+                #action = 'Stop'
                 #action = random.choice(legalActions)
 
         self.doAction(state, action)
@@ -166,7 +188,7 @@ class PacmanDQNAgent(ReinforcementAgent):
         self.nextImage = np.reshape(self.nextImage, [1, self.frame_height, self.frame_width, 3])
         self.nextImage = np.uint8(self.nextImage)
         #new code
-        if not self.getLegalActions(state):
+        if not self.getLegalActions(nextState):
             done = True
         else:
             done = False
@@ -181,7 +203,8 @@ class PacmanDQNAgent(ReinforcementAgent):
         # entrenamos la red neuronal solo mientras estamos en entrenamiento
         #if self.episodesSoFar < self.numTraining:
         #if self.episodesSoFar < self.numTraining:
-        if len(self.memory) > 2*self.batch_size:
+
+        if len(self.memory) > 4*self.batch_size:
             self.replay(self.batch_size)
 
     # def getPolicy(self, state):
@@ -230,7 +253,7 @@ class PacmanDQNAgent(ReinforcementAgent):
         model.add(Flatten())
         model.add(Dense(512, activation='relu'))
         model.add(Dense(self.action_size))
-        model.compile(loss='mse', optimizer=Adam(lr=self.alpha))
+        model.compile(loss='mae', optimizer=Adam(lr=self.alpha))
 
 
         return model
@@ -248,108 +271,8 @@ class PacmanDQNAgent(ReinforcementAgent):
             x_batch.append(state[0])
             y_batch.append(y_target[0])
 
-        self.model.fit(np.array(x_batch), np.array(y_batch), batch_size=len(x_batch), verbose=1)
+        self.model.fit(np.array(x_batch), np.array(y_batch), batch_size=len(x_batch), verbose=0)
 
         if self.epsilon > self.epsilon_min:
             #None
             self.epsilon *= self.epsilon_decay
-
-
-    def getStateMatrices(self, state):
-        """ Return wall, ghosts, food, capsules matrices """
-        def getWallMatrix(state):
-            """ Return matrix with wall coordinates set to 1 """
-            width, height = state.data.layout.width, state.data.layout.height
-            grid = state.data.layout.walls
-            matrix = np.zeros((height, width), dtype=np.int8)
-            for i in range(grid.height):
-                for j in range(grid.width):
-                    # Put cell vertically reversed in matrix
-                    cell = 1 if grid[j][i] else 0
-                    matrix[-1-i][j] = cell
-            return matrix
-
-        def getPacmanMatrix(state):
-            """ Return matrix with pacman coordinates set to 1 """
-            width, height = state.data.layout.width, state.data.layout.height
-            matrix = np.zeros((height, width), dtype=np.int8)
-
-            for agentState in state.data.agentStates:
-                if agentState.isPacman:
-                    pos = agentState.configuration.getPosition()
-                    cell = 1
-                    matrix[-1-int(pos[1])][int(pos[0])] = cell
-
-            return matrix
-
-        def getGhostMatrix(state):
-            """ Return matrix with ghost coordinates set to 1 """
-            width, height = state.data.layout.width, state.data.layout.height
-            matrix = np.zeros((height, width), dtype=np.int8)
-
-            for agentState in state.data.agentStates:
-                if not agentState.isPacman:
-                    if not agentState.scaredTimer > 0:
-                        pos = agentState.configuration.getPosition()
-                        cell = 1
-                        matrix[-1-int(pos[1])][int(pos[0])] = cell
-
-            return matrix
-
-        def getScaredGhostMatrix(state):
-            """ Return matrix with ghost coordinates set to 1 """
-            width, height = state.data.layout.width, state.data.layout.height
-            matrix = np.zeros((height, width), dtype=np.int8)
-
-            for agentState in state.data.agentStates:
-                if not agentState.isPacman:
-                    if agentState.scaredTimer > 0:
-                        pos = agentState.configuration.getPosition()
-                        cell = 1
-                        matrix[-1-int(pos[1])][int(pos[0])] = cell
-
-            return matrix
-
-        def getFoodMatrix(state):
-            """ Return matrix with food coordinates set to 1 """
-            width, height = state.data.layout.width, state.data.layout.height
-            grid = state.data.food
-            matrix = np.zeros((height, width), dtype=np.int8)
-
-            for i in range(grid.height):
-                for j in range(grid.width):
-                    # Put cell vertically reversed in matrix
-                    cell = 1 if grid[j][i] else 0
-                    matrix[-1-i][j] = cell
-
-            return matrix
-
-        def getCapsulesMatrix(state):
-            """ Return matrix with capsule coordinates set to 1 """
-            width, height = state.data.layout.width, state.data.layout.height
-            capsules = state.data.layout.capsules
-            matrix = np.zeros((height, width), dtype=np.int8)
-
-            for i in capsules:
-                # Insert capsule cells vertically reversed into matrix
-                matrix[-1-i[1], i[0]] = 1
-
-            return matrix
-
-        # Create observation matrix as a combination of
-        # wall, pacman, ghost, food and capsule matrices
-        # width, height = state.data.layout.width, state.data.layout.height
-        width, height = state.data.layout.width, state.data.layout.height
-        observation = np.zeros((6, height, width))
-
-        observation[0] = getWallMatrix(state)
-        observation[1] = getPacmanMatrix(state)
-        observation[2] = getGhostMatrix(state)
-        observation[3] = getScaredGhostMatrix(state)
-        observation[4] = getFoodMatrix(state)
-        observation[5] = getCapsulesMatrix(state)
-        #print 'observation: ', observation
-        #observation = np.swapaxes(observation, 0, 2)
-
-        #print 'observation: ', observation
-        return observation

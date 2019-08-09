@@ -386,7 +386,7 @@ def getImage():
     x1=x+_canvas.winfo_width()
     y1=y+_canvas.winfo_height()
 
-    im = grab(bbox=(x, y, x1, y1))
+    im = grab(bbox=(x+5, y+5, x1-5, y1-35))
     #im.save("test" + str(datetime.now()) + str(random.random()) +".png")
     #im.show()
     return im
