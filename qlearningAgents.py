@@ -158,6 +158,7 @@ class PacmanQAgent(QLearningAgent):
         informs parent of action for Pacman.  Do not change or remove this
         method.
         """
+        print 'Starting getAction'
         action = QLearningAgent.getAction(self,state)
         self.doAction(state,action)
         return action
@@ -245,6 +246,7 @@ class ApproximateQAgent(PacmanQAgent):
            Should update your weights based on transition
         """
         "*** YOUR CODE HERE ***"
+        print 'Starting update'
         feature_dictionary = self.featExtractor.getFeatures(state, action)
         difference = (reward + self.discount * self.computeValueFromQValues(nextState)) - self.getQValue(state, action)
 

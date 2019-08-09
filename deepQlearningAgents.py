@@ -46,7 +46,7 @@ class DeepQLearningAgent(ReinforcementAgent):
         """
             Returns collection of Qs(state)
         """
-        # TODO pasar el cálculo por la red de neuronas y devolver los valores Q
+        # TODO pasar el
 
     def computeValueFromQValues(self, state):
         """

@@ -326,7 +326,7 @@ def move_to(object, x, y=None,
             d_w=Tkinter.tkinter.DONT_WAIT):
     if y is None:
         try: x, y = x
-        except: raise  'incomprehensible coordinates'
+        except: raise Exception('incomprehensible coordinates')
 
     horiz = True
     newCoords = []
@@ -373,6 +373,24 @@ def writePostscript(filename):
                      y='0.c',
                      x='0.c'))
     psfile.close()
+
+
+from pyscreenshot import grab
+from datetime import datetime
+import random
+
+# lo dejo por si sirve pero ya no me sirve
+def getImage():
+    x=_root_window.winfo_rootx()+_canvas.winfo_x()
+    y=_root_window.winfo_rooty()+_canvas.winfo_y()
+    x1=x+_canvas.winfo_width()
+    y1=y+_canvas.winfo_height()
+
+    im = grab(bbox=(x, y, x1, y1))
+    #im.save("test" + str(datetime.now()) + str(random.random()) +".png")
+    #im.show()
+    return im
+    # TODO cambiarlo por un return image
 
 ghost_shape = [
     (0, - 0.5),

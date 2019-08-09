@@ -664,12 +664,12 @@ def add(x, y):
 # convert -delay 7 -loop 1 -compress lzw -layers optimize frame* out.gif
 # convert is part of imagemagick (freeware)
 
-SAVE_POSTSCRIPT = False
+SAVE_POSTSCRIPT = True
 POSTSCRIPT_OUTPUT_DIR = 'frames'
 FRAME_NUMBER = 0
 import os
 
-def saveFrame():
+def saveFrame(): #esto me puede servir para conseguir la imagen!!!!
     "Saves the current graphical output as a postscript file"
     global SAVE_POSTSCRIPT, FRAME_NUMBER, POSTSCRIPT_OUTPUT_DIR
     if not SAVE_POSTSCRIPT: return
@@ -677,3 +677,7 @@ def saveFrame():
     name = os.path.join(POSTSCRIPT_OUTPUT_DIR, 'frame_%08d.ps' % FRAME_NUMBER)
     FRAME_NUMBER += 1
     writePostscript(name) # writes the current canvas
+
+# nuevo metodo que ya no sirve para nada
+def getFrame():
+    return getImage()
